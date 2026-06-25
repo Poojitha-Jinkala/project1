@@ -1,0 +1,17 @@
+services:
+  - type: web
+    name: resumeparser
+    runtime: python
+    buildCommand: pip install -r requirements.txt && python -m spacy download en_core_web_sm
+    startCommand: gunicorn app:app
+    envVars:
+      - key: SECRET_KEY
+        generateValue: true
+      - key: DATABASE_URL
+        value: sqlite:///resume_parser.db
+      - key: UPLOAD_FOLDER
+        value: uploads
+    disk:
+      name: resumeparser-data
+      mountPath: /opt/render/project/src
+      sizeGB: 1
