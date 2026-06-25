@@ -3,14 +3,14 @@ import json
 
 def test_upload():
     url = "http://127.0.0.1:5000/upload"
-    file_path = "mock_resume.docx"
+    file_path = r"C:\Users\JINKALA POOJITHA\OneDrive\Desktop\codec\project1\project1\poojitharesume.pdf"
     
     print(f"Sending POST upload request for '{file_path}' to {url}...")
     
     try:
         # Open file in binary mode
         with open(file_path, 'rb') as f:
-            files = {'file': (file_path, f, 'application/vnd.openxmlformats-officedocument.wordprocessingml.document')}
+            files = {'file': (file_path, f, 'application/pdf')}
             headers = {'X-Requested-With': 'XMLHttpRequest'} # To get JSON response
             
             response = requests.post(url, files=files, headers=headers)
