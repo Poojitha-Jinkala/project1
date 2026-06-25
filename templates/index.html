@@ -1,0 +1,197 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="dashboard-container">
+    <!-- Header Summary -->
+    <div class="dashboard-title-row">
+        <div>
+            <h1>Candidate Dashboard</h1>
+            <p class="subtitle">Search, filter, and review parsed applications</p>
+        </div>
+        <a href="{{ url_for('upload_file') }}" class="btn-primary">
+            <i class="fa-solid fa-plus"></i> Upload New Resume
+        </a>
+    </div>
+
+    <!-- Quick Stats Summary Row -->
+    <div class="stats-grid">
+        <div class="stat-card glass-card">
+            <div class="stat-icon bg-blue"><i class="fa-solid fa-users"></i></div>
+            <div class="stat-details">
+                <span class="stat-num" id="stat-total-resumes">{{ candidates|length }}</span>
+                <span class="stat-label">Total Resumes</span>
+            </div>
+        </div>
+        <div class="stat-card glass-card">
+            <div class="stat-icon bg-indigo"><i class="fa-solid fa-laptop-code"></i></div>
+            <div class="stat-details">
+                <span class="stat-num" id="stat-skills-count">
+                    {% set all_skills = [] %}
+                    {% for c in candidates %}
+                        {% for s in c.skills %}
+                            {% if s.name not in all_skills %}
+                                {% set _ = all_skills.append(s.name) %}
+                            {% endif %}
+                        {% endfor %}
+                    {% endfor %}
+                    {{ all_skills|length }}
+                </span>
+                <span class="stat-label">Unique Skills Extracted</span>
+            </div>
+        </div>
+        <div class="stat-card glass-card">
+            <div class="stat-icon bg-purple"><i class="fa-solid fa-graduation-cap"></i></div>
+            <div class="stat-details">
+                <span class="stat-num" id="stat-degrees-count">
+                    {% set all_degrees = [] %}
+                    {% for c in candidates %}
+                        {% for edu in c.education %}
+                            {% if edu.degree and edu.degree not in all_degrees %}
+                                {% set _ = all_degrees.append(edu.degree) %}
+                            {% endif %}
+                        {% endfor %}
+                    {% endfor %}
+                    {{ all_degrees|length }}
+                </span>
+                <span class="stat-label">Degrees Identified</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Search & Filters -->
+    <div class="search-filter-card glass-card">
+        <div class="search-bar-container">
+            <i class="fa-solid fa-magnifying-glass search-icon"></i>
+            <input type="text" id="search-input" placeholder="Search by name, skills, email, or university..." autocomplete="off">
+            <button id="clear-search-btn" class="clear-btn" style="display: none;"><i class="fa-solid fa-xmark"></i></button>
+        </div>
+        <div class="skills-filter-row">
+            <span class="filter-title"><i class="fa-solid fa-tags"></i> Top Skills:</span>
+            <div class="filter-pills" id="top-skills-pills">
+                <!-- Will be populated by JS, showing sample tags for initial load -->
+                {% set top_skills = [] %}
+                {% set skill_counts = {} %}
+                {% for c in candidates %}
+                    {% for s in c.skills %}
+                        {% if s.name in skill_counts %}
+                            {% set _ = skill_counts.update({s.name: skill_counts[s.name] + 1}) %}
+                        {% else %}
+                            {% set _ = skill_counts.update({s.name: 1}) %}
+                        {% endif %}
+                    {% endfor %}
+                {% endfor %}
+                
+                {% for skill_name, count in skill_counts.items()|sort(attribute='1', reverse=True) %}
+                    {% if loop.index <= 8 %}
+                        <button class="filter-pill" data-skill="{{ skill_name }}">{{ skill_name }} ({{ count }})</button>
+                    {% endif %}
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Candidate List Grid -->
+    <div class="candidates-section">
+        <div class="section-header">
+            <h2>Candidates Pipeline</h2>
+            <span class="results-indicator" id="results-count">Showing {{ candidates|length }} results</span>
+        </div>
+
+        {% if not candidates %}
+        <div class="empty-state glass-card">
+            <div class="empty-icon"><i class="fa-solid fa-folder-open"></i></div>
+            <h3>No Resumes Found</h3>
+            <p>You haven't uploaded any resumes yet. Start building your database now!</p>
+            <a href="{{ url_for('upload_file') }}" class="btn-primary">
+                <i class="fa-solid fa-cloud-arrow-up"></i> Upload Resume
+            </a>
+        </div>
+        {% else %}
+        <div class="candidates-grid" id="candidates-grid">
+            {% for candidate in candidates %}
+            <div class="candidate-card glass-card" data-id="{{ candidate.id }}" data-searchable="{{ candidate.name }} {{ candidate.email }} {{ candidate.phone }} {% for s in candidate.skills %}{{ s.name }} {% endfor %} {% for edu in candidate.education %}{{ edu.institution }} {{ edu.degree }} {{ edu.field_of_study }} {% endfor %}">
+                <div class="card-header">
+                    <div class="avatar">
+                        {{ candidate.name[:2]|upper if candidate.name else 'UN' }}
+                    </div>
+                    <div class="meta">
+                        <h3>{{ candidate.name or 'Unknown Candidate' }}</h3>
+                        <span class="date"><i class="fa-regular fa-clock"></i> Parsed {{ candidate.created_at.strftime('%b %d, %Y') }}</span>
+                    </div>
+                </div>
+
+                <div class="card-body">
+                    <!-- Contact Info -->
+                    <div class="contact-details">
+                        <div class="contact-item">
+                            <i class="fa-regular fa-envelope"></i>
+                            <span class="text-truncate">{{ candidate.email or 'N/A' }}</span>
+                        </div>
+                        <div class="contact-item">
+                            <i class="fa-solid fa-phone"></i>
+                            <span>{{ candidate.phone or 'N/A' }}</span>
+                        </div>
+                    </div>
+
+                    <!-- Skills -->
+                    <div class="skills-section">
+                        <h4>Skills Matrix</h4>
+                        <div class="skills-container">
+                            {% if candidate.skills %}
+                                {% for skill in candidate.skills[:5] %}
+                                    <span class="skill-badge">{{ skill.name }}</span>
+                                {% endfor %}
+                                {% if candidate.skills|length > 5 %}
+                                    <span class="skill-badge count-badge">+{{ candidate.skills|length - 5 }} more</span>
+                                {% endif %}
+                            {% else %}
+                                <span class="no-skills-msg">No skills identified.</span>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <!-- Education Snippet -->
+                    <div class="education-snippet">
+                        <i class="fa-solid fa-graduation-cap"></i>
+                        <span>
+                            {% if candidate.education %}
+                                {{ candidate.education[0].degree }} in {{ candidate.education[0].field_of_study }}
+                            {% else %}
+                                Education not found
+                            {% endif %}
+                        </span>
+                    </div>
+                </div>
+
+                <div class="card-footer">
+                    <a href="{{ url_for('view_resume', candidate_id=candidate.id) }}" class="btn-secondary">
+                        <i class="fa-regular fa-eye"></i> View Profile
+                    </a>
+                    <button class="btn-icon btn-delete" onclick="confirmDeleteCandidate({{ candidate.id }}, event)">
+                        <i class="fa-regular fa-trash-can"></i>
+                    </button>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Modal for confirmation -->
+<div class="modal-overlay" id="delete-modal">
+    <div class="modal-content glass-card">
+        <div class="modal-header">
+            <h3><i class="fa-solid fa-triangle-exclamation"></i> Delete Candidate</h3>
+            <button class="modal-close" onclick="closeDeleteModal()">&times;</button>
+        </div>
+        <div class="modal-body">
+            <p>Are you sure you want to permanently delete this candidate profile? This action cannot be undone.</p>
+        </div>
+        <div class="modal-footer">
+            <button class="btn-secondary" onclick="closeDeleteModal()">Cancel</button>
+            <button class="btn-danger" id="confirm-delete-btn">Delete Profile</button>
+        </div>
+    </div>
+</div>
+{% endblock %}

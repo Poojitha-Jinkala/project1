@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ResumeParser - Premium Applicant Tracking System</title>
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <!-- FontAwesome for icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+</head>
+<body>
+    <div class="app-container">
+        <!-- Ambient background glows -->
+        <div class="glow glow-1"></div>
+        <div class="glow glow-2"></div>
+        
+        <!-- Header / Navigation -->
+        <header class="glass-header">
+            <div class="header-content">
+                <a href="{{ url_for('index') }}" class="logo">
+                    <span class="logo-icon"><i class="fa-solid fa-wand-magic-sparkles"></i></span>
+                    <span class="logo-text">Resume<span>Parser</span></span>
+                </a>
+                <nav class="nav-links">
+                    <a href="{{ url_for('index') }}" class="nav-item {% if request.endpoint == 'index' %}active{% endif %}">
+                        <i class="fa-solid fa-chart-simple"></i> Dashboard
+                    </a>
+                    <a href="{{ url_for('upload_file') }}" class="nav-item {% if request.endpoint == 'upload_file' %}active{% endif %}">
+                        <i class="fa-solid fa-cloud-arrow-up"></i> Upload Resume
+                    </a>
+                </nav>
+            </div>
+        </header>
+
+        <!-- Flash Messages -->
+        <main class="main-content">
+            {% with messages = get_flashed_messages() %}
+                {% if messages %}
+                    <div class="flash-messages">
+                        {% for message in messages %}
+                            <div class="flash-message glass-card">
+                                <span class="flash-icon"><i class="fa-solid fa-circle-info"></i></span>
+                                <span class="flash-text">{{ message }}</span>
+                                <button class="flash-close-btn" onclick="this.parentElement.remove()">&times;</button>
+                            </div>
+                        {% endfor %}
+                    </div>
+                {% endif %}
+            {% endwith %}
+
+            {% block content %}{% endblock %}
+        </main>
+
+        <footer class="glass-footer">
+            <p>&copy; 2026 ResumeParser. Designed with premium AI engineering.</p>
+        </footer>
+    </div>
+
+    <!-- Custom JS -->
+    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+</body>
+</html>

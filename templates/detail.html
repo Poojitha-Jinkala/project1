@@ -1,0 +1,219 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="detail-container">
+    <!-- Breadcrumbs / Top Actions -->
+    <div class="detail-navigation">
+        <a href="{{ url_for('index') }}" class="back-link">
+            <i class="fa-solid fa-arrow-left-long"></i> Back to Dashboard
+        </a>
+        <div class="detail-actions">
+            <a href="{{ url_for('export_candidate', candidate_id=candidate.id) }}" target="_blank" class="btn-secondary">
+                <i class="fa-solid fa-file-export"></i> Export JSON
+            </a>
+            <button class="btn-danger-outline" onclick="triggerDeleteProfile({{ candidate.id }})">
+                <i class="fa-regular fa-trash-can"></i> Delete Profile
+            </button>
+        </div>
+    </div>
+
+    <!-- Candidate Main Header Card -->
+    <div class="candidate-header-card glass-card">
+        <div class="header-profile-section">
+            <div class="avatar-large">
+                {{ candidate.name[:2]|upper if candidate.name else 'UN' }}
+            </div>
+            <div class="profile-meta">
+                <h1>{{ candidate.name or 'Unknown Candidate' }}</h1>
+                <p class="parsed-date"><i class="fa-regular fa-calendar-check"></i> Profile parsed on {{ candidate.created_at.strftime('%B %d, %Y') }}</p>
+                
+                <div class="quick-contact-row">
+                    <div class="contact-pill">
+                        <i class="fa-regular fa-envelope"></i>
+                        <span>{{ candidate.email or 'N/A' }}</span>
+                    </div>
+                    <div class="contact-pill">
+                        <i class="fa-solid fa-phone"></i>
+                        <span>{{ candidate.phone or 'N/A' }}</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Details Main Content Grid -->
+    <div class="detail-main-layout">
+        <!-- Tabs Menu -->
+        <div class="tabs-control-wrapper glass-card">
+            <button class="tab-btn active" data-tab="tab-overview">
+                <i class="fa-solid fa-address-card"></i> Overview & Summary
+            </button>
+            <button class="tab-btn" data-tab="tab-skills">
+                <i class="fa-solid fa-list-check"></i> Skills Matrix ({{ candidate.skills|length }})
+            </button>
+            <button class="tab-btn" data-tab="tab-history">
+                <i class="fa-solid fa-briefcase"></i> Experience & Education
+            </button>
+            <button class="tab-btn" data-tab="tab-raw">
+                <i class="fa-solid fa-file-lines"></i> Raw Resume Text
+            </button>
+        </div>
+
+        <!-- Tab Contents -->
+        <div class="tabs-content-wrapper">
+            <!-- Tab: Overview -->
+            <div class="tab-pane active" id="tab-overview">
+                <div class="glass-card panel-card">
+                    <h3>Professional Summary</h3>
+                    <div class="summary-text-block">
+                        {% if candidate.summary %}
+                            <p>{{ candidate.summary }}</p>
+                        {% else %}
+                            <p class="text-muted">No explicit professional summary was detected in the resume.</p>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <div class="glass-card panel-card mt-2">
+                    <h3>Key Insights</h3>
+                    <div class="insights-grid">
+                        <div class="insight-box">
+                            <span class="insight-num">{{ candidate.experience|length }}</span>
+                            <span class="insight-label">Roles Parsed</span>
+                        </div>
+                        <div class="insight-box">
+                            <span class="insight-num">{{ candidate.education|length }}</span>
+                            <span class="insight-label">Degrees Parsed</span>
+                        </div>
+                        <div class="insight-box">
+                            <span class="insight-num">{{ candidate.skills|length }}</span>
+                            <span class="insight-label">Skills Extracted</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tab: Skills -->
+            <div class="tab-pane" id="tab-skills">
+                <div class="glass-card panel-card">
+                    <h3>Extracted Skills Matrix</h3>
+                    <p class="subtitle">Identified skills mapped from resume parsing database</p>
+                    
+                    {% if candidate.skills %}
+                        <div class="full-skills-grid">
+                            {% for skill in candidate.skills %}
+                                <div class="skill-badge-large">
+                                    <span class="skill-badge-icon"><i class="fa-solid fa-code"></i></span>
+                                    <span class="skill-badge-text">{{ skill.name }}</span>
+                                </div>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <div class="empty-tab-state">
+                            <i class="fa-solid fa-tags"></i>
+                            <p>No skills detected in this document.</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Tab: Experience & Education Timeline -->
+            <div class="tab-pane" id="tab-history">
+                <!-- Split Grid: Work History Left, Education Right -->
+                <div class="history-grid-layout">
+                    <!-- Work History -->
+                    <div class="glass-card panel-card">
+                        <h3>Work Experience</h3>
+                        
+                        {% if candidate.experience %}
+                            <div class="timeline-container">
+                                {% for exp in candidate.experience %}
+                                    <div class="timeline-item">
+                                        <div class="timeline-marker"></div>
+                                        <div class="timeline-content">
+                                            <div class="timeline-header">
+                                                <h4>{{ exp.job_title }}</h4>
+                                                <span class="timeline-date">{{ exp.start_date or 'N/A' }} - {{ exp.end_date or 'Present' }}</span>
+                                            </div>
+                                            <span class="timeline-sub">{{ exp.company }}</span>
+                                            {% if exp.description %}
+                                                <div class="timeline-description">
+                                                    {% for line in exp.description.split('\n') %}
+                                                        {% if line.strip() %}
+                                                            <p>{{ line }}</p>
+                                                        {% endif %}
+                                                    {% endfor %}
+                                                </div>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                {% endfor %}
+                            </div>
+                        {% else %}
+                            <div class="empty-tab-state">
+                                <i class="fa-solid fa-briefcase"></i>
+                                <p>No professional work history parsed.</p>
+                            </div>
+                        {% endif %}
+                    </div>
+
+                    <!-- Education History -->
+                    <div class="glass-card panel-card">
+                        <h3>Education Background</h3>
+                        
+                        {% if candidate.education %}
+                            <div class="timeline-container">
+                                {% for edu in candidate.education %}
+                                    <div class="timeline-item edu-item">
+                                        <div class="timeline-marker bg-indigo"></div>
+                                        <div class="timeline-content">
+                                            <div class="timeline-header">
+                                                <h4>{{ edu.degree }} in {{ edu.field_of_study }}</h4>
+                                                <span class="timeline-date">{{ edu.end_year or 'Graduated' }}</span>
+                                            </div>
+                                            <span class="timeline-sub">{{ edu.institution }}</span>
+                                        </div>
+                                    </div>
+                                {% endfor %}
+                            </div>
+                        {% else %}
+                            <div class="empty-tab-state">
+                                <i class="fa-solid fa-graduation-cap"></i>
+                                <p>No educational credentials parsed.</p>
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tab: Raw Text -->
+            <div class="tab-pane" id="tab-raw">
+                <div class="glass-card panel-card">
+                    <h3>Raw Text Content</h3>
+                    <p class="subtitle">Full text extracted by Parser Engine (PDFPlumber / DocxReader)</p>
+                    <div class="raw-text-container">
+                        <pre><code>{{ candidate.raw_text }}</code></pre>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal for confirmation -->
+<div class="modal-overlay" id="delete-modal">
+    <div class="modal-content glass-card">
+        <div class="modal-header">
+            <h3><i class="fa-solid fa-triangle-exclamation"></i> Delete Profile</h3>
+            <button class="modal-close" onclick="closeDeleteModal()">&times;</button>
+        </div>
+        <div class="modal-body">
+            <p>Are you sure you want to permanently delete <strong>{{ candidate.name or 'this candidate' }}</strong> from the database? This action cannot be undone.</p>
+        </div>
+        <div class="modal-footer">
+            <button class="btn-secondary" onclick="closeDeleteModal()">Cancel</button>
+            <button class="btn-danger" id="confirm-delete-btn">Delete Profile</button>
+        </div>
+    </div>
+</div>
+{% endblock %}
