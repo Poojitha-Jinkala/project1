@@ -1,0 +1,498 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ResumeParser — Premium Applicant Tracking System</title>
+  <meta name="description" content="AI-powered resume parsing dashboard. Upload PDF or DOCX resumes and instantly extract names, skills, education, and work experience." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #07090f;
+      --surface: rgba(255,255,255,0.04);
+      --border: rgba(255,255,255,0.08);
+      --accent1: #7c6fff;
+      --accent2: #a78bfa;
+      --accent3: #38bdf8;
+      --text: #f0f0f8;
+      --muted: #8a8fa8;
+    }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      font-family: 'Inter', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    /* ── Animated background ── */
+    .bg-canvas {
+      position: fixed; inset: 0; z-index: 0; pointer-events: none;
+      background: radial-gradient(ellipse 80% 60% at 20% 10%, rgba(124,111,255,0.18) 0%, transparent 60%),
+                  radial-gradient(ellipse 60% 50% at 80% 80%, rgba(56,189,248,0.12) 0%, transparent 60%),
+                  radial-gradient(ellipse 50% 40% at 50% 50%, rgba(167,139,250,0.06) 0%, transparent 70%);
+    }
+    .orb {
+      position: fixed; border-radius: 50%; filter: blur(80px); opacity: 0.35; pointer-events: none;
+      animation: drift 18s ease-in-out infinite;
+    }
+    .orb-1 { width: 500px; height: 500px; background: #7c6fff; top: -150px; left: -100px; animation-delay: 0s; }
+    .orb-2 { width: 400px; height: 400px; background: #38bdf8; bottom: -100px; right: -80px; animation-delay: -7s; }
+    .orb-3 { width: 300px; height: 300px; background: #a78bfa; top: 40%; left: 55%; animation-delay: -13s; }
+
+    @keyframes drift {
+      0%, 100% { transform: translate(0, 0) scale(1); }
+      33%       { transform: translate(30px, -40px) scale(1.08); }
+      66%       { transform: translate(-20px, 30px) scale(0.95); }
+    }
+
+    /* ── Layout ── */
+    .wrapper { position: relative; z-index: 1; }
+
+    /* ── Navbar ── */
+    nav {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 1.25rem 2.5rem;
+      background: rgba(7,9,15,0.6);
+      backdrop-filter: blur(20px);
+      border-bottom: 1px solid var(--border);
+      position: sticky; top: 0; z-index: 100;
+    }
+    .logo {
+      display: flex; align-items: center; gap: 0.6rem;
+      font-family: 'Outfit', sans-serif; font-weight: 700; font-size: 1.3rem;
+      text-decoration: none; color: var(--text);
+    }
+    .logo-icon {
+      width: 38px; height: 38px; border-radius: 10px;
+      background: linear-gradient(135deg, var(--accent1), var(--accent3));
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1rem; color: #fff;
+      box-shadow: 0 0 20px rgba(124,111,255,0.5);
+    }
+    .logo span { color: var(--accent2); }
+    .nav-links { display: flex; gap: 1rem; align-items: center; }
+    .nav-link {
+      color: var(--muted); text-decoration: none; font-size: 0.9rem;
+      padding: 0.4rem 0.8rem; border-radius: 8px;
+      transition: color 0.2s, background 0.2s;
+    }
+    .nav-link:hover { color: var(--text); background: var(--surface); }
+    .btn-nav {
+      background: linear-gradient(135deg, var(--accent1), var(--accent3));
+      color: #fff; border: none; padding: 0.5rem 1.2rem;
+      border-radius: 10px; font-size: 0.9rem; font-weight: 600;
+      cursor: pointer; text-decoration: none;
+      transition: opacity 0.2s, transform 0.2s;
+      display: flex; align-items: center; gap: 0.4rem;
+    }
+    .btn-nav:hover { opacity: 0.85; transform: translateY(-1px); }
+
+    /* ── Hero ── */
+    .hero {
+      display: flex; flex-direction: column; align-items: center;
+      text-align: center; padding: 6rem 2rem 4rem;
+      max-width: 860px; margin: 0 auto;
+    }
+    .badge {
+      display: inline-flex; align-items: center; gap: 0.5rem;
+      background: rgba(124,111,255,0.15); border: 1px solid rgba(124,111,255,0.3);
+      color: var(--accent2); font-size: 0.8rem; font-weight: 600; letter-spacing: 0.05em;
+      padding: 0.35rem 1rem; border-radius: 999px; margin-bottom: 2rem;
+      animation: fadeUp 0.6s ease both;
+    }
+    .badge i { font-size: 0.75rem; }
+    .hero h1 {
+      font-family: 'Outfit', sans-serif; font-size: clamp(2.8rem, 6vw, 4.5rem);
+      font-weight: 800; line-height: 1.1; margin-bottom: 1.5rem;
+      animation: fadeUp 0.7s 0.1s ease both;
+    }
+    .hero h1 .gradient-text {
+      background: linear-gradient(135deg, var(--accent1) 0%, var(--accent3) 60%, var(--accent2) 100%);
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+    }
+    .hero p {
+      font-size: 1.15rem; color: var(--muted); line-height: 1.7;
+      max-width: 620px; margin-bottom: 2.5rem;
+      animation: fadeUp 0.7s 0.2s ease both;
+    }
+    .hero-cta {
+      display: flex; gap: 1rem; flex-wrap: wrap; justify-content: center;
+      animation: fadeUp 0.7s 0.3s ease both;
+    }
+    .btn-primary {
+      display: inline-flex; align-items: center; gap: 0.5rem;
+      background: linear-gradient(135deg, var(--accent1), var(--accent3));
+      color: #fff; text-decoration: none;
+      padding: 0.85rem 2rem; border-radius: 14px;
+      font-family: 'Outfit', sans-serif; font-weight: 700; font-size: 1rem;
+      box-shadow: 0 0 30px rgba(124,111,255,0.4);
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+    .btn-primary:hover { transform: translateY(-3px); box-shadow: 0 0 50px rgba(124,111,255,0.6); }
+    .btn-secondary {
+      display: inline-flex; align-items: center; gap: 0.5rem;
+      background: var(--surface); color: var(--text); text-decoration: none;
+      padding: 0.85rem 2rem; border-radius: 14px;
+      border: 1px solid var(--border);
+      font-family: 'Outfit', sans-serif; font-weight: 600; font-size: 1rem;
+      transition: background 0.2s, transform 0.2s;
+    }
+    .btn-secondary:hover { background: rgba(255,255,255,0.08); transform: translateY(-3px); }
+
+    /* ── Preview card ── */
+    .preview-wrap {
+      max-width: 950px; margin: 2rem auto 5rem; padding: 0 2rem;
+      animation: fadeUp 0.8s 0.4s ease both;
+    }
+    .preview-card {
+      background: rgba(255,255,255,0.03);
+      border: 1px solid var(--border);
+      border-radius: 20px; padding: 2rem;
+      backdrop-filter: blur(20px);
+      box-shadow: 0 40px 80px rgba(0,0,0,0.4), 0 0 0 1px rgba(124,111,255,0.1);
+    }
+    .preview-bar {
+      display: flex; gap: 6px; margin-bottom: 1.5rem; align-items: center;
+    }
+    .dot { width: 12px; height: 12px; border-radius: 50%; }
+    .dot-r { background: #ff5f57; }
+    .dot-y { background: #febc2e; }
+    .dot-g { background: #28c840; }
+    .preview-bar span {
+      margin-left: auto; font-size: 0.75rem; color: var(--muted);
+      background: rgba(255,255,255,0.05); padding: 0.2rem 0.7rem;
+      border-radius: 6px; border: 1px solid var(--border);
+    }
+    .stats-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; margin-bottom: 1.5rem; }
+    .stat-box {
+      background: rgba(255,255,255,0.04); border: 1px solid var(--border);
+      border-radius: 12px; padding: 1.2rem; text-align: center;
+    }
+    .stat-num { font-family: 'Outfit', sans-serif; font-size: 2rem; font-weight: 800; display: block; }
+    .stat-num.blue { color: var(--accent3); }
+    .stat-num.purple { color: var(--accent1); }
+    .stat-num.violet { color: var(--accent2); }
+    .stat-lbl { font-size: 0.8rem; color: var(--muted); }
+    .mock-cards { display: grid; grid-template-columns: repeat(2, 1fr); gap: 1rem; }
+    .mock-card {
+      background: rgba(255,255,255,0.04); border: 1px solid var(--border);
+      border-radius: 12px; padding: 1rem;
+      display: flex; flex-direction: column; gap: 0.5rem;
+    }
+    .mock-name { font-family: 'Outfit', sans-serif; font-weight: 700; font-size: 0.95rem; }
+    .mock-role { font-size: 0.78rem; color: var(--muted); }
+    .mock-tags { display: flex; flex-wrap: wrap; gap: 0.35rem; margin-top: 0.25rem; }
+    .tag {
+      font-size: 0.7rem; padding: 0.2rem 0.6rem; border-radius: 6px; font-weight: 600;
+      background: rgba(124,111,255,0.15); color: var(--accent2);
+      border: 1px solid rgba(124,111,255,0.2);
+    }
+    .tag.blue { background: rgba(56,189,248,0.1); color: var(--accent3); border-color: rgba(56,189,248,0.2); }
+
+    /* ── Features ── */
+    .section { max-width: 1100px; margin: 0 auto; padding: 3rem 2rem; }
+    .section-label {
+      text-align: center; color: var(--accent2); font-size: 0.8rem; font-weight: 700;
+      letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 0.75rem;
+    }
+    .section-title {
+      text-align: center; font-family: 'Outfit', sans-serif;
+      font-size: clamp(1.8rem, 3.5vw, 2.5rem); font-weight: 800; margin-bottom: 0.75rem;
+    }
+    .section-sub { text-align: center; color: var(--muted); max-width: 520px; margin: 0 auto 3rem; line-height: 1.6; }
+    .features-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 1.25rem; }
+    .feature-card {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 16px; padding: 1.75rem;
+      transition: transform 0.25s, border-color 0.25s, box-shadow 0.25s;
+      cursor: default;
+    }
+    .feature-card:hover {
+      transform: translateY(-6px);
+      border-color: rgba(124,111,255,0.35);
+      box-shadow: 0 20px 50px rgba(124,111,255,0.12);
+    }
+    .feature-icon {
+      width: 48px; height: 48px; border-radius: 12px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1.2rem; margin-bottom: 1rem;
+    }
+    .icon-purple { background: rgba(124,111,255,0.15); color: var(--accent1); }
+    .icon-blue   { background: rgba(56,189,248,0.12);  color: var(--accent3); }
+    .icon-violet { background: rgba(167,139,250,0.12); color: var(--accent2); }
+    .icon-green  { background: rgba(52,211,153,0.12);  color: #34d399; }
+    .icon-rose   { background: rgba(251,113,133,0.12); color: #fb7185; }
+    .icon-amber  { background: rgba(251,191,36,0.12);  color: #fbbf24; }
+    .feature-card h3 {
+      font-family: 'Outfit', sans-serif; font-weight: 700; font-size: 1.05rem; margin-bottom: 0.5rem;
+    }
+    .feature-card p { font-size: 0.88rem; color: var(--muted); line-height: 1.6; }
+
+    /* ── Tech stack ── */
+    .stack-wrap {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 20px; padding: 2.5rem; margin-top: 4rem;
+    }
+    .stack-grid { display: flex; flex-wrap: wrap; gap: 1rem; justify-content: center; margin-top: 2rem; }
+    .stack-pill {
+      display: flex; align-items: center; gap: 0.6rem;
+      background: rgba(255,255,255,0.05); border: 1px solid var(--border);
+      padding: 0.6rem 1.2rem; border-radius: 999px;
+      font-size: 0.88rem; font-weight: 600; color: var(--text);
+      transition: background 0.2s, transform 0.2s;
+    }
+    .stack-pill:hover { background: rgba(124,111,255,0.12); transform: translateY(-2px); }
+    .stack-pill i { font-size: 0.9rem; }
+
+    /* ── Deploy banner ── */
+    .deploy-banner {
+      background: linear-gradient(135deg, rgba(124,111,255,0.15) 0%, rgba(56,189,248,0.1) 100%);
+      border: 1px solid rgba(124,111,255,0.25);
+      border-radius: 20px; padding: 3rem 2rem; text-align: center;
+      margin: 4rem 2rem;
+    }
+    .deploy-banner h2 {
+      font-family: 'Outfit', sans-serif; font-size: 2rem; font-weight: 800; margin-bottom: 1rem;
+    }
+    .deploy-banner p { color: var(--muted); margin-bottom: 2rem; font-size: 0.95rem; }
+    .deploy-steps {
+      display: flex; justify-content: center; gap: 1.5rem; flex-wrap: wrap;
+      margin-bottom: 2rem;
+    }
+    .step {
+      display: flex; flex-direction: column; align-items: center; gap: 0.5rem;
+      background: rgba(255,255,255,0.04); border: 1px solid var(--border);
+      border-radius: 14px; padding: 1.25rem 1.5rem; min-width: 150px;
+    }
+    .step-num {
+      width: 32px; height: 32px; border-radius: 50%;
+      background: linear-gradient(135deg, var(--accent1), var(--accent3));
+      display: flex; align-items: center; justify-content: center;
+      font-weight: 800; font-size: 0.85rem;
+    }
+    .step span { font-size: 0.82rem; color: var(--muted); text-align: center; }
+
+    /* ── Footer ── */
+    footer {
+      text-align: center; padding: 2.5rem 2rem;
+      border-top: 1px solid var(--border);
+      color: var(--muted); font-size: 0.85rem;
+    }
+    footer a { color: var(--accent2); text-decoration: none; }
+    footer a:hover { text-decoration: underline; }
+
+    /* ── Animations ── */
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(24px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    /* ── Responsive ── */
+    @media (max-width: 640px) {
+      nav { padding: 1rem; }
+      .mock-cards { grid-template-columns: 1fr; }
+      .stats-row  { grid-template-columns: 1fr; }
+      .deploy-steps { flex-direction: column; align-items: center; }
+      .nav-links .nav-link { display: none; }
+    }
+  </style>
+</head>
+<body>
+  <div class="bg-canvas"></div>
+  <div class="orb orb-1"></div>
+  <div class="orb orb-2"></div>
+  <div class="orb orb-3"></div>
+
+  <div class="wrapper">
+
+    <!-- ── Nav ── -->
+    <nav>
+      <a href="#" class="logo">
+        <div class="logo-icon"><i class="fa-solid fa-wand-magic-sparkles"></i></div>
+        Resume<span>Parser</span>
+      </a>
+      <div class="nav-links">
+        <a href="#features" class="nav-link">Features</a>
+        <a href="#deploy"   class="nav-link">Deploy</a>
+        <a href="https://github.com/Poojitha-Jinkala/project1" target="_blank" class="nav-link">
+          <i class="fa-brands fa-github"></i> GitHub
+        </a>
+        <a href="https://github.com/Poojitha-Jinkala/project1" target="_blank" class="btn-nav">
+          <i class="fa-solid fa-rocket"></i> Live App
+        </a>
+      </div>
+    </nav>
+
+    <!-- ── Hero ── -->
+    <section class="hero">
+      <div class="badge">
+        <i class="fa-solid fa-bolt"></i> AI-Powered Resume Intelligence
+      </div>
+      <h1>
+        Parse Resumes.<br />
+        <span class="gradient-text">Hire Smarter.</span>
+      </h1>
+      <p>
+        Upload any PDF or DOCX resume and instantly extract structured candidate data —
+        names, contact info, skills, education, and work history — all powered by
+        spaCy NLP and a sleek glassmorphism dashboard.
+      </p>
+      <div class="hero-cta">
+        <a href="https://github.com/Poojitha-Jinkala/project1" id="cta-live" target="_blank" class="btn-primary">
+          <i class="fa-solid fa-arrow-up-right-from-square"></i> View on GitHub
+        </a>
+        <a href="#features" class="btn-secondary">
+          <i class="fa-solid fa-circle-info"></i> Learn More
+        </a>
+      </div>
+    </section>
+
+    <!-- ── Preview card ── -->
+    <div class="preview-wrap">
+      <div class="preview-card">
+        <div class="preview-bar">
+          <div class="dot dot-r"></div>
+          <div class="dot dot-y"></div>
+          <div class="dot dot-g"></div>
+          <span>📊 Candidate Dashboard</span>
+        </div>
+        <div class="stats-row">
+          <div class="stat-box">
+            <span class="stat-num blue">48</span>
+            <span class="stat-lbl">Total Resumes</span>
+          </div>
+          <div class="stat-box">
+            <span class="stat-num purple">120+</span>
+            <span class="stat-lbl">Skills Extracted</span>
+          </div>
+          <div class="stat-box">
+            <span class="stat-num violet">98%</span>
+            <span class="stat-lbl">Parse Accuracy</span>
+          </div>
+        </div>
+        <div class="mock-cards">
+          <div class="mock-card">
+            <div class="mock-name">Jane Doe</div>
+            <div class="mock-role">Software Engineer · Google</div>
+            <div class="mock-tags">
+              <span class="tag">Python</span>
+              <span class="tag">Flask</span>
+              <span class="tag blue">Docker</span>
+              <span class="tag blue">Kubernetes</span>
+            </div>
+          </div>
+          <div class="mock-card">
+            <div class="mock-name">Alex Chen</div>
+            <div class="mock-role">Data Scientist · Meta</div>
+            <div class="mock-tags">
+              <span class="tag">TensorFlow</span>
+              <span class="tag">PyTorch</span>
+              <span class="tag blue">SQL</span>
+              <span class="tag blue">AWS</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── Features ── -->
+    <section class="section" id="features">
+      <div class="section-label">What It Does</div>
+      <h2 class="section-title">Everything You Need to Parse Resumes</h2>
+      <p class="section-sub">
+        A full-stack applicant tracking system with an NLP extraction engine and a premium dark-mode UI.
+      </p>
+      <div class="features-grid">
+        <div class="feature-card">
+          <div class="feature-icon icon-purple"><i class="fa-solid fa-brain"></i></div>
+          <h3>NLP Extraction Engine</h3>
+          <p>Uses spaCy's <code>en_core_web_sm</code> model for named entity recognition to identify candidate names and context-aware data.</p>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon icon-blue"><i class="fa-solid fa-file-arrow-up"></i></div>
+          <h3>PDF & DOCX Support</h3>
+          <p>Handles both PDF (via pdfplumber) and DOCX (via python-docx) formats with intelligent text normalization.</p>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon icon-violet"><i class="fa-solid fa-database"></i></div>
+          <h3>Persistent Storage</h3>
+          <p>All parsed candidates are saved to a SQLite database via SQLAlchemy ORM with full CRUD support.</p>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon icon-green"><i class="fa-solid fa-magnifying-glass"></i></div>
+          <h3>Live Search & Filter</h3>
+          <p>Real-time candidate search and skill-based filtering on the dashboard — no page reload needed.</p>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon icon-rose"><i class="fa-solid fa-code"></i></div>
+          <h3>REST API</h3>
+          <p>JSON endpoints for listing, exporting, and deleting candidates — making integration with other tools simple.</p>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon icon-amber"><i class="fa-solid fa-palette"></i></div>
+          <h3>Glassmorphism UI</h3>
+          <p>A premium dark-mode interface with animated glows, glassmorphism cards, hover animations, and tab-based detail views.</p>
+        </div>
+      </div>
+
+      <!-- Tech stack -->
+      <div class="stack-wrap">
+        <div class="section-label">Built With</div>
+        <div class="stack-grid">
+          <div class="stack-pill"><i class="fa-brands fa-python" style="color:#3b82f6"></i> Python 3.11</div>
+          <div class="stack-pill"><i class="fa-solid fa-flask" style="color:#7c6fff"></i> Flask 3</div>
+          <div class="stack-pill"><i class="fa-solid fa-robot" style="color:#a78bfa"></i> spaCy NLP</div>
+          <div class="stack-pill"><i class="fa-solid fa-database" style="color:#38bdf8"></i> SQLAlchemy</div>
+          <div class="stack-pill"><i class="fa-solid fa-file-pdf" style="color:#fb7185"></i> pdfplumber</div>
+          <div class="stack-pill"><i class="fa-solid fa-file-word" style="color:#60a5fa"></i> python-docx</div>
+          <div class="stack-pill"><i class="fa-solid fa-server" style="color:#34d399"></i> Gunicorn</div>
+          <div class="stack-pill"><i class="fa-brands fa-github" style="color:#c084fc"></i> GitHub</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ── Deploy banner ── -->
+    <div class="deploy-banner" id="deploy">
+      <h2>🚀 Deploy in Minutes</h2>
+      <p>This is a Flask backend app — GitHub Pages can't run it. Deploy to Render for a free live URL.</p>
+      <div class="deploy-steps">
+        <div class="step">
+          <div class="step-num">1</div>
+          <span>Sign up at render.com with GitHub</span>
+        </div>
+        <div class="step">
+          <div class="step-num">2</div>
+          <span>New → Web Service → connect this repo</span>
+        </div>
+        <div class="step">
+          <div class="step-num">3</div>
+          <span>Render auto-reads <code>render.yaml</code> → Deploy!</span>
+        </div>
+      </div>
+      <a href="https://render.com" target="_blank" class="btn-primary" id="cta-render">
+        <i class="fa-solid fa-rocket"></i> Deploy to Render — Free
+      </a>
+    </div>
+
+    <!-- ── Footer ── -->
+    <footer>
+      <p>
+        Built by <a href="https://github.com/Poojitha-Jinkala" target="_blank">Poojitha Jinkala</a> ·
+        <a href="https://github.com/Poojitha-Jinkala/project1" target="_blank">
+          <i class="fa-brands fa-github"></i> View Source
+        </a>
+      </p>
+    </footer>
+
+  </div>
+</body>
+</html>
